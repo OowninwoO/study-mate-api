@@ -1,6 +1,5 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
 
 const router = express.Router();
 
@@ -9,7 +8,8 @@ const storage = multer.diskStorage({
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}_${file.originalname}`);
+    const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    cb(null, `${Date.now()}_${originalName}`);
   },
 });
 
