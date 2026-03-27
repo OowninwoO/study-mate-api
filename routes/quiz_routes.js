@@ -19,6 +19,8 @@ const upload = multer({ storage });
 router.post('/pdf', upload.single('file'), async (req, res) => {
   try {
     const result = await quizService.generateQuizFromPdf(req.file.path);
+    
+    console.log(result);
 
     res.status(200).json({
       ok: true,
