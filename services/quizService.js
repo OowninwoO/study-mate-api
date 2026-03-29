@@ -23,15 +23,54 @@ async function generateQuizFromPdf(filePath) {
           },
           {
             type: 'input_text',
-            text: '이 PDF 내용을 바탕으로 객관식 문제 10개를 만들어줘. 각 문제마다 보기 4개, 정답, 해설을 포함해줘.',
+            text: [
+              '이 PDF 내용을 바탕으로 객관식 문제를 정확히 10개 만들어줘.',
+              '반드시 한국어로 작성해.',
+              '각 문제는 아래 구조를 따라.',
+              '- question: 문제',
+              '- options: 보기 4개 문자열 배열',
+              '- answerIndex: 정답 보기의 0-based index',
+              '- explanation: 해설',
+            ].join('\n'),
           },
         ],
       },
     ],
+    text: {
+      format: {
+        type: 'json_schema',
+        name: 'quiz_set',
+        strict: true,
+        schema: {
+          type: 'object',
+          properties: {
+            quizzes: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  question: { type: 'string' },
+                  options: {
+                    type: 'array',
+                    items: { type: 'string' },
+                  },
+                  answerIndex: { type: 'integer' },
+                  explanation: { type: 'string' },
+                },
+                required: ['question', 'options', 'answerIndex', 'explanation'],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ['quizzes'],
+          additionalProperties: false,
+        },
+      },
+    },
     store: false,
   });
 
-  return response.output_text;
+  return JSON.parse(response.output_text);
 }
 
 module.exports = {
