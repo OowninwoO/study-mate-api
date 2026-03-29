@@ -20,7 +20,7 @@ router.post('/pdf', upload.single('file'), async (req, res) => {
   try {
     const result = await quizService.generateQuizFromPdf(req.file.path);
     
-    console.log(result);
+    console.log(JSON.stringify(result, null, 2));
 
     res.status(200).json({
       ok: true,
