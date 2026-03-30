@@ -5,7 +5,7 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-async function generateQuizFromPdf(filePath) {
+async function generateQuizFromPdf(sourceTitle, filePath) {
   const uploadedFile = await client.files.create({
     file: fs.createReadStream(filePath),
     purpose: 'user_data',
@@ -81,6 +81,7 @@ async function generateQuizFromPdf(filePath) {
   const parsed = JSON.parse(response.output_text);
 
   return {
+    sourceTitle,
     quizzes: parsed.quizzes,
     createdAt: new Date().toISOString(),
   };
