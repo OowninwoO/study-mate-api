@@ -46,6 +46,8 @@ async function generateQuizFromPdf(filePath) {
           properties: {
             quizzes: {
               type: 'array',
+              minItems: 10,
+              maxItems: 10,
               items: {
                 type: 'object',
                 properties: {
@@ -53,8 +55,14 @@ async function generateQuizFromPdf(filePath) {
                   options: {
                     type: 'array',
                     items: { type: 'string' },
+                    minItems: 4,
+                    maxItems: 4,
                   },
-                  answerIndex: { type: 'integer' },
+                  answerIndex: {
+                    type: 'integer',
+                    minimum: 0,
+                    maximum: 3,
+                  },
                   explanation: { type: 'string' },
                 },
                 required: ['question', 'options', 'answerIndex', 'explanation'],
@@ -70,7 +78,12 @@ async function generateQuizFromPdf(filePath) {
     store: false,
   });
 
-  return JSON.parse(response.output_text);
+  const parsed = JSON.parse(response.output_text);
+
+  return {
+    quizzes: parsed.quizzes,
+    createdAt: new Date().toISOString(),
+  };
 }
 
 module.exports = {
