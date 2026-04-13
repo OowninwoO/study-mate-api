@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { randomUUID } = require('crypto');
 const OpenAI = require('openai');
 
 const client = new OpenAI({
@@ -81,8 +82,15 @@ async function generateQuizFromPdf(sourceTitle, filePath) {
   const parsed = JSON.parse(response.output_text);
 
   return {
+    id: randomUUID(),
     sourceTitle,
-    quizzes: parsed.quizzes,
+    quizzes: parsed.quizzes.map((quiz) => ({
+      id: randomUUID(),
+      question: quiz.question,
+      options: quiz.options,
+      answerIndex: quiz.answerIndex,
+      explanation: quiz.explanation,
+    })),
     createdAt: new Date().toISOString(),
   };
 }
