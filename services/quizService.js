@@ -80,17 +80,24 @@ async function generateQuizFromPdf(sourceTitle, filePath) {
   });
 
   const parsed = JSON.parse(response.output_text);
+  const quizSetId = randomUUID();
 
   return {
-    id: randomUUID(),
+    id: quizSetId,
     sourceTitle,
-    quizzes: parsed.quizzes.map((quiz) => ({
-      id: randomUUID(),
-      question: quiz.question,
-      options: quiz.options,
-      answerIndex: quiz.answerIndex,
-      explanation: quiz.explanation,
-    })),
+    quizzes: parsed.quizzes.map((quiz, index) => {
+      const quizItemId = randomUUID();
+
+      return {
+        id: quizItemId,
+        quizSetId,
+        questionNumber: index + 1,
+        question: quiz.question,
+        options: quiz.options,
+        answerIndex: quiz.answerIndex,
+        explanation: quiz.explanation,
+      };
+    }),
     createdAt: new Date().toISOString(),
   };
 }
