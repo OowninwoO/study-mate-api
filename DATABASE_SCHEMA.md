@@ -21,6 +21,7 @@ CREATE TABLE users (
 CREATE TABLE quiz_sets (
   id BIGSERIAL PRIMARY KEY,
   source_title TEXT NOT NULL,
+  category VARCHAR(100) NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
