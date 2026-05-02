@@ -20,7 +20,7 @@ router.post('/pdf', upload.single('file'), async (req, res) => {
   try {
     const sourceTitle = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
 
-    const result = await quizService.generateQuizFromPdf(
+    const result = await quizService.createQuizSetFromPdf(
       sourceTitle,
       req.file.path,
     );

@@ -26,7 +26,13 @@ const DEFAULT_QUIZ_CATEGORIES = [
   '기타',
 ];
 
-async function generateQuizFromPdf(sourceTitle, filePath) {
+async function createQuizSetFromPdf(sourceTitle, filePath) {
+  const { category, quizzes } = await generateQuizzes(filePath);
+
+  return saveQuizSet(sourceTitle, category, quizzes);
+}
+
+async function generateQuizzes(filePath) {
   const uploadedFile = await client.files.create({
     file: fs.createReadStream(filePath),
     purpose: 'user_data',
@@ -106,9 +112,7 @@ async function generateQuizFromPdf(sourceTitle, filePath) {
     store: false,
   });
 
-  const parsed = JSON.parse(response.output_text);
-
-  return saveQuizSet(sourceTitle, parsed.category, parsed.quizzes);
+  return JSON.parse(response.output_text);
 }
 
 async function saveQuizSet(sourceTitle, category, quizzes) {
@@ -198,5 +202,5 @@ async function saveQuizSet(sourceTitle, category, quizzes) {
 }
 
 module.exports = {
-  generateQuizFromPdf,
+  createQuizSetFromPdf,
 };
