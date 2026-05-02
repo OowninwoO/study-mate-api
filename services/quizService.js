@@ -1,6 +1,6 @@
 const fs = require('fs');
-const { randomUUID } = require('crypto');
 const OpenAI = require('openai');
+const pool = require('../db');
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -107,27 +107,94 @@ async function generateQuizFromPdf(sourceTitle, filePath) {
   });
 
   const parsed = JSON.parse(response.output_text);
-  const quizSetId = randomUUID();
 
-  return {
-    id: quizSetId,
-    sourceTitle,
-    category: parsed.category,
-    quizzes: parsed.quizzes.map((quiz, index) => {
-      const quizItemId = randomUUID();
+  return saveQuizSet(sourceTitle, parsed.category, parsed.quizzes);
+}
 
-      return {
-        id: quizItemId,
-        quizSetId,
-        questionNumber: index + 1,
-        question: quiz.question,
-        options: quiz.options,
-        answerIndex: quiz.answerIndex,
-        explanation: quiz.explanation,
-      };
-    }),
-    createdAt: new Date().toISOString(),
-  };
+async function saveQuizSet(sourceTitle, category, quizzes) {
+  const dbClient = await pool.connect();
+
+  try {
+    await dbClient.query('BEGIN');
+
+    const quizSetResult = await dbClient.query(
+      `
+      INSERT INTO quiz_sets (source_title, category)
+      VALUES ($1, $2)
+      RETURNING id, source_title, category, created_at
+      `,
+      [sourceTitle, category],
+    );
+
+    const quizSet = quizSetResult.rows[0];
+    const values = [];
+    const placeholders = quizzes.map((quiz, index) => {
+      const offset = index * 9;
+
+      values.push(
+        quizSet.id,
+        index + 1,
+        quiz.question,
+        quiz.options[0],
+        quiz.options[1],
+        quiz.options[2],
+        quiz.options[3],
+        quiz.answerIndex,
+        quiz.explanation,
+      );
+
+      return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9})`;
+    });
+
+    const quizItemsResult = await dbClient.query(
+      `
+      INSERT INTO quiz_items (
+        quiz_set_id,
+        question_number,
+        question,
+        option_1,
+        option_2,
+        option_3,
+        option_4,
+        answer_index,
+        explanation
+      )
+      VALUES ${placeholders.join(', ')}
+      RETURNING *
+      `,
+      values,
+    );
+
+    await dbClient.query('COMMIT');
+
+    return {
+      id: quizSet.id,
+      sourceTitle: quizSet.source_title,
+      category: quizSet.category,
+      quizzes: quizItemsResult.rows
+        .sort((a, b) => a.question_number - b.question_number)
+        .map((quizItem) => ({
+          id: quizItem.id,
+          quizSetId: quizItem.quiz_set_id,
+          questionNumber: quizItem.question_number,
+          question: quizItem.question,
+          options: [
+            quizItem.option_1,
+            quizItem.option_2,
+            quizItem.option_3,
+            quizItem.option_4,
+          ],
+          answerIndex: quizItem.answer_index,
+          explanation: quizItem.explanation,
+        })),
+      createdAt: quizSet.created_at,
+    };
+  } catch (e) {
+    await dbClient.query('ROLLBACK');
+    throw e;
+  } finally {
+    dbClient.release();
+  }
 }
 
 module.exports = {
