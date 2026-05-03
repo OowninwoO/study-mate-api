@@ -1,7 +1,7 @@
 const admin = require('../firebase');
 const pool = require('../db');
 
-async function authenticateUser(req, res, next) {
+async function verifyFirebaseToken(req, res, next) {
   try {
     const authorization = req.headers.authorization;
 
@@ -15,13 +15,27 @@ async function authenticateUser(req, res, next) {
     const idToken = authorization.split('Bearer ')[1];
     const decodedToken = await admin.auth().verifyIdToken(idToken);
 
+    req.firebaseUid = decodedToken.uid;
+    next();
+  } catch (e) {
+    console.log(e);
+
+    res.status(401).json({
+      ok: false,
+      message: '유효하지 않은 인증 토큰입니다.',
+    });
+  }
+}
+
+async function authenticateUser(req, res, next) {
+  try {
     const result = await pool.query(
       `
       SELECT id
       FROM users
       WHERE firebase_uid = $1
       `,
-      [decodedToken.uid],
+      [req.firebaseUid],
     );
 
     if (result.rowCount === 0) {
@@ -36,13 +50,14 @@ async function authenticateUser(req, res, next) {
   } catch (e) {
     console.log(e);
 
-    res.status(401).json({
+    res.status(500).json({
       ok: false,
-      message: '유효하지 않은 인증 토큰입니다.',
+      message: '사용자 인증 처리 실패',
     });
   }
 }
 
 module.exports = {
+  verifyFirebaseToken,
   authenticateUser,
 };

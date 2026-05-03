@@ -1,23 +1,13 @@
 const express = require('express');
 const admin = require('../firebase');
 const pool = require('../db');
+const { verifyFirebaseToken } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-router.post('/login', async (req, res) => {
+router.post('/login', verifyFirebaseToken, async (req, res) => {
   try {
-    const authorization = req.headers.authorization;
-
-    if (!authorization || !authorization.startsWith('Bearer ')) {
-      return res.status(401).json({
-        ok: false,
-        message: '인증 토큰이 없습니다.',
-      });
-    }
-
-    const idToken = authorization.split('Bearer ')[1];
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const firebaseUser = await admin.auth().getUser(decodedToken.uid);
+    const firebaseUser = await admin.auth().getUser(req.firebaseUid);
 
     const firebaseUid = firebaseUser.uid;
     const provider = firebaseUser.providerData[0]?.providerId ?? null;
