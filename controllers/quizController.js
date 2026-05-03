@@ -1,26 +1,18 @@
-const express = require('express');
-const multer = require('multer');
 const quizService = require('../services/quizService');
 
-const router = express.Router();
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-    cb(null, `${Date.now()}_${originalName}`);
-  },
-});
-
-const upload = multer({ storage });
-
-router.post('/pdf', upload.single('file'), async (req, res) => {
+async function createQuizSetFromPdf(req, res) {
   try {
+    if (!req.file) {
+      return res.status(400).json({
+        ok: false,
+        message: 'PDF 파일이 필요합니다.',
+      });
+    }
+
     const sourceTitle = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
 
     const result = await quizService.createQuizSetFromPdf(
+      req.userId,
       sourceTitle,
       req.file.path,
     );
@@ -40,6 +32,8 @@ router.post('/pdf', upload.single('file'), async (req, res) => {
       message: '퀴즈 생성 실패',
     });
   }
-});
+}
 
-module.exports = router;
+module.exports = {
+  createQuizSetFromPdf,
+};

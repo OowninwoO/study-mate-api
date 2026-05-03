@@ -1,6 +1,8 @@
 const fs = require('fs');
 const OpenAI = require('openai');
 const pool = require('../db');
+const quizSetRepository = require('../repositories/quizSetRepository');
+const quizItemRepository = require('../repositories/quizItemRepository');
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -26,13 +28,7 @@ const DEFAULT_QUIZ_CATEGORIES = [
   '기타',
 ];
 
-async function createQuizSetFromPdf(sourceTitle, filePath) {
-  const { category, quizzes } = await generateQuizzes(filePath);
-
-  return saveQuizSet(sourceTitle, category, quizzes);
-}
-
-async function generateQuizzes(filePath) {
+async function createQuizSetFromPdf(userId, sourceTitle, filePath) {
   const uploadedFile = await client.files.create({
     file: fs.createReadStream(filePath),
     purpose: 'user_data',
@@ -51,7 +47,7 @@ async function generateQuizzes(filePath) {
           {
             type: 'input_text',
             text: [
-              '이 PDF 내용을 바탕으로 객관식 문제를 정확히 10개 만들어줘.',
+              'PDF 내용을 바탕으로 객관식 문제를 정확히 10개 만들어줘.',
               '반드시 한국어로 작성해.',
               'PDF 전체 내용을 보고 아래 카테고리 후보 중 가장 적절한 카테고리 하나를 선택해.',
               '후보에 정확히 맞는 카테고리가 없으면 반드시 기타를 선택해.',
@@ -112,70 +108,32 @@ async function generateQuizzes(filePath) {
     store: false,
   });
 
-  return JSON.parse(response.output_text);
-}
-
-async function saveQuizSet(sourceTitle, category, quizzes) {
+  const { category, quizzes } = JSON.parse(response.output_text);
   const dbClient = await pool.connect();
 
   try {
     await dbClient.query('BEGIN');
 
-    const quizSetResult = await dbClient.query(
-      `
-      INSERT INTO quiz_sets (source_title, category)
-      VALUES ($1, $2)
-      RETURNING id, source_title, category, created_at
-      `,
-      [sourceTitle, category],
-    );
-
-    const quizSet = quizSetResult.rows[0];
-    const values = [];
-    const placeholders = quizzes.map((quiz, index) => {
-      const offset = index * 9;
-
-      values.push(
-        quizSet.id,
-        index + 1,
-        quiz.question,
-        quiz.options[0],
-        quiz.options[1],
-        quiz.options[2],
-        quiz.options[3],
-        quiz.answerIndex,
-        quiz.explanation,
-      );
-
-      return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9})`;
+    const quizSet = await quizSetRepository.createQuizSet(dbClient, {
+      userId,
+      sourceTitle,
+      category,
     });
 
-    const quizItemsResult = await dbClient.query(
-      `
-      INSERT INTO quiz_items (
-        quiz_set_id,
-        question_number,
-        question,
-        option_1,
-        option_2,
-        option_3,
-        option_4,
-        answer_index,
-        explanation
-      )
-      VALUES ${placeholders.join(', ')}
-      RETURNING *
-      `,
-      values,
+    const quizItems = await quizItemRepository.createQuizItems(
+      dbClient,
+      quizSet.id,
+      quizzes,
     );
 
     await dbClient.query('COMMIT');
 
     return {
       id: quizSet.id,
+      userId: quizSet.user_id,
       sourceTitle: quizSet.source_title,
       category: quizSet.category,
-      quizzes: quizItemsResult.rows
+      quizzes: quizItems
         .sort((a, b) => a.question_number - b.question_number)
         .map((quizItem) => ({
           id: quizItem.id,

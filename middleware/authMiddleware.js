@@ -1,5 +1,5 @@
 const admin = require('../firebase');
-const pool = require('../db');
+const userRepository = require('../repositories/userRepository');
 
 async function verifyFirebaseToken(req, res, next) {
   try {
@@ -29,23 +29,16 @@ async function verifyFirebaseToken(req, res, next) {
 
 async function authenticateUser(req, res, next) {
   try {
-    const result = await pool.query(
-      `
-      SELECT id
-      FROM users
-      WHERE firebase_uid = $1
-      `,
-      [req.firebaseUid],
-    );
+    const user = await userRepository.findIdByFirebaseUid(req.firebaseUid);
 
-    if (result.rowCount === 0) {
+    if (!user) {
       return res.status(404).json({
         ok: false,
         message: '사용자를 찾을 수 없습니다.',
       });
     }
 
-    req.userId = result.rows[0].id;
+    req.userId = user.id;
     next();
   } catch (e) {
     console.log(e);
