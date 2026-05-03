@@ -1,5 +1,16 @@
 # Database Schema
 
+## Drop Tables
+
+Keep the `users` table and recreate only the 4 quiz-related tables.
+
+```sql
+DROP TABLE IF EXISTS quiz_attempt_answers;
+DROP TABLE IF EXISTS quiz_attempts;
+DROP TABLE IF EXISTS quiz_items;
+DROP TABLE IF EXISTS quiz_sets;
+```
+
 ## 1. users
 
 ```sql
@@ -20,6 +31,7 @@ CREATE TABLE users (
 ```sql
 CREATE TABLE quiz_sets (
   id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   source_title TEXT NOT NULL,
   category VARCHAR(100) NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
