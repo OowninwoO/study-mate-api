@@ -34,6 +34,25 @@ async function createQuizSetFromPdf(req, res) {
   }
 }
 
+async function getMyQuizSets(req, res) {
+  try {
+    const quizSets = await quizService.getQuizSetsByUserId(req.userId);
+
+    res.status(200).json({
+      ok: true,
+      data: quizSets,
+    });
+  } catch (e) {
+    console.log(e);
+
+    res.status(500).json({
+      ok: false,
+      message: '퀴즈 목록 조회 실패',
+    });
+  }
+}
+
 module.exports = {
   createQuizSetFromPdf,
+  getMyQuizSets,
 };

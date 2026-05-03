@@ -159,6 +159,43 @@ async function createQuizSetFromPdf(userId, sourceTitle, filePath) {
   }
 }
 
+async function getQuizSetsByUserId(userId) {
+  const rows = await quizSetRepository.findQuizSetsByUserId(userId);
+  const quizSetMap = new Map();
+
+  rows.forEach((row) => {
+    if (!quizSetMap.has(row.quiz_set_id)) {
+      quizSetMap.set(row.quiz_set_id, {
+        id: row.quiz_set_id,
+        sourceTitle: row.source_title,
+        category: row.category,
+        quizzes: [],
+        createdAt: row.created_at,
+      });
+    }
+
+    if (row.quiz_item_id !== null) {
+      quizSetMap.get(row.quiz_set_id).quizzes.push({
+        id: row.quiz_item_id,
+        quizSetId: row.quiz_set_id,
+        questionNumber: row.question_number,
+        question: row.question,
+        options: [
+          row.option_1,
+          row.option_2,
+          row.option_3,
+          row.option_4,
+        ],
+        answerIndex: row.answer_index,
+        explanation: row.explanation,
+      });
+    }
+  });
+
+  return Array.from(quizSetMap.values());
+}
+
 module.exports = {
   createQuizSetFromPdf,
+  getQuizSetsByUserId,
 };
