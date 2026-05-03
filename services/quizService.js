@@ -113,16 +113,14 @@ async function createQuizSetFromPdf(userId, sourceTitle, filePath) {
   try {
     await dbClient.query('BEGIN');
 
-    const quizSet = await quizRepository.createQuizSet(dbClient, {
-      userId,
-      sourceTitle,
-      category,
-    });
-
-    const quizItems = await quizRepository.createQuizItems(
+    const { quizSet, quizItems } = await quizRepository.createQuizSetWithItems(
       dbClient,
-      quizSet.id,
-      quizzes,
+      {
+        userId,
+        sourceTitle,
+        category,
+        quizzes,
+      },
     );
 
     await dbClient.query('COMMIT');

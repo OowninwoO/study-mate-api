@@ -1,7 +1,10 @@
 const pool = require('../db');
 
-async function createQuizSet(dbClient, { userId, sourceTitle, category }) {
-  const result = await dbClient.query(
+async function createQuizSetWithItems(
+  dbClient,
+  { userId, sourceTitle, category, quizzes },
+) {
+  const quizSetResult = await dbClient.query(
     `
     INSERT INTO quiz_sets (user_id, source_title, category)
     VALUES ($1, $2, $3)
@@ -10,16 +13,13 @@ async function createQuizSet(dbClient, { userId, sourceTitle, category }) {
     [userId, sourceTitle, category],
   );
 
-  return result.rows[0];
-}
-
-async function createQuizItems(dbClient, quizSetId, quizzes) {
+  const quizSet = quizSetResult.rows[0];
   const values = [];
   const placeholders = quizzes.map((quiz, index) => {
     const offset = index * 9;
 
     values.push(
-      quizSetId,
+      quizSet.id,
       index + 1,
       quiz.question,
       quiz.options[0],
@@ -33,7 +33,7 @@ async function createQuizItems(dbClient, quizSetId, quizzes) {
     return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9})`;
   });
 
-  const result = await dbClient.query(
+  const quizItemsResult = await dbClient.query(
     `
     INSERT INTO quiz_items (
       quiz_set_id,
@@ -52,7 +52,10 @@ async function createQuizItems(dbClient, quizSetId, quizzes) {
     values,
   );
 
-  return result.rows;
+  return {
+    quizSet,
+    quizItems: quizItemsResult.rows,
+  };
 }
 
 async function findQuizSetsByUserId(userId) {
@@ -84,7 +87,6 @@ async function findQuizSetsByUserId(userId) {
 }
 
 module.exports = {
-  createQuizSet,
-  createQuizItems,
+  createQuizSetWithItems,
   findQuizSetsByUserId,
 };
