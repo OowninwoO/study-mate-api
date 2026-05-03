@@ -1,8 +1,7 @@
 const fs = require('fs');
 const OpenAI = require('openai');
 const pool = require('../db');
-const quizSetRepository = require('../repositories/quizSetRepository');
-const quizItemRepository = require('../repositories/quizItemRepository');
+const quizRepository = require('../repositories/quizRepository');
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -114,13 +113,13 @@ async function createQuizSetFromPdf(userId, sourceTitle, filePath) {
   try {
     await dbClient.query('BEGIN');
 
-    const quizSet = await quizSetRepository.createQuizSet(dbClient, {
+    const quizSet = await quizRepository.createQuizSet(dbClient, {
       userId,
       sourceTitle,
       category,
     });
 
-    const quizItems = await quizItemRepository.createQuizItems(
+    const quizItems = await quizRepository.createQuizItems(
       dbClient,
       quizSet.id,
       quizzes,
@@ -160,7 +159,7 @@ async function createQuizSetFromPdf(userId, sourceTitle, filePath) {
 }
 
 async function getQuizSetsByUserId(userId) {
-  const rows = await quizSetRepository.findQuizSetsByUserId(userId);
+  const rows = await quizRepository.findQuizSetsByUserId(userId);
   const quizSetMap = new Map();
 
   rows.forEach((row) => {
