@@ -52,7 +52,33 @@ async function getMyQuizSets(req, res) {
   }
 }
 
+async function submitQuiz(req, res) {
+  try {
+    const { quizSetId, solvingTime, answers } = req.body;
+    const result = await quizService.submitQuiz(
+      req.userId,
+      quizSetId,
+      solvingTime,
+      answers,
+    );
+
+    res.status(200).json({
+      ok: true,
+      message: '퀴즈 제출 성공',
+      data: result,
+    });
+  } catch (e) {
+    console.log(e);
+
+    res.status(500).json({
+      ok: false,
+      message: '퀴즈 제출 실패',
+    });
+  }
+}
+
 module.exports = {
   createQuizSetFromPdf,
   getMyQuizSets,
+  submitQuiz,
 };

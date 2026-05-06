@@ -95,7 +95,54 @@ async function findQuizSetsByUserId(userId) {
   return result.rows;
 }
 
+async function createQuizAttemptWithAnswers(
+  dbClient,
+  { userId, quizSetId, solvingTime, answers },
+) {
+  const quizAttemptResult = await dbClient.query(
+    `
+    INSERT INTO quiz_attempts (user_id, quiz_set_id, solving_time)
+    VALUES ($1, $2, $3)
+    RETURNING id, user_id, quiz_set_id, solving_time, created_at
+    `,
+    [userId, quizSetId, solvingTime],
+  );
+
+  const quizAttempt = quizAttemptResult.rows[0];
+  const values = [];
+  const placeholders = answers.map((answer, index) => {
+    const offset = index * 3;
+
+    values.push(
+      quizAttempt.id,
+      answer.quizItemId,
+      answer.selectedAnswer,
+    );
+
+    return `($${offset + 1}, $${offset + 2}, $${offset + 3})`;
+  });
+
+  const quizAttemptAnswersResult = await dbClient.query(
+    `
+    INSERT INTO quiz_attempt_answers (
+      attempt_id,
+      quiz_item_id,
+      selected_answer
+    )
+    VALUES ${placeholders.join(', ')}
+    RETURNING id, attempt_id, quiz_item_id, selected_answer
+    `,
+    values,
+  );
+
+  return {
+    quizAttempt,
+    quizAttemptAnswers: quizAttemptAnswersResult.rows,
+  };
+}
+
 module.exports = {
   createQuizSetWithItems,
   findQuizSetsByUserId,
+  createQuizAttemptWithAnswers,
 };

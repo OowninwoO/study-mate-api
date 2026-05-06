@@ -160,7 +160,48 @@ async function getQuizSetsByUserId(userId) {
   return quizRepository.findQuizSetsByUserId(userId);
 }
 
+async function submitQuiz(userId, quizSetId, solvingTime, answers) {
+  const dbClient = await pool.connect();
+
+  try {
+    await dbClient.query('BEGIN');
+
+    const { quizAttempt, quizAttemptAnswers } = await quizRepository
+      .createQuizAttemptWithAnswers(
+        dbClient,
+        {
+          userId,
+          quizSetId,
+          solvingTime,
+          answers,
+        },
+      );
+
+    await dbClient.query('COMMIT');
+
+    return {
+      id: quizAttempt.id,
+      userId: quizAttempt.user_id,
+      quizSetId: quizAttempt.quiz_set_id,
+      solvingTime: quizAttempt.solving_time,
+      answers: quizAttemptAnswers.map((answer) => ({
+        id: answer.id,
+        attemptId: answer.attempt_id,
+        quizItemId: answer.quiz_item_id,
+        selectedAnswer: answer.selected_answer,
+      })),
+      createdAt: quizAttempt.created_at,
+    };
+  } catch (e) {
+    await dbClient.query('ROLLBACK');
+    throw e;
+  } finally {
+    dbClient.release();
+  }
+}
+
 module.exports = {
   createQuizSetFromPdf,
   getQuizSetsByUserId,
+  submitQuiz,
 };

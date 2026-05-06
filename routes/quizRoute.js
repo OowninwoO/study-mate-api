@@ -28,6 +28,13 @@ router.get(
 );
 
 router.post(
+  '/submit',
+  verifyFirebaseToken,
+  authenticateUser,
+  quizController.submitQuiz,
+);
+
+router.post(
   '/pdf',
   verifyFirebaseToken,
   authenticateUser,
