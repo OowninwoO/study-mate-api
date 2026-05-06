@@ -62,23 +62,32 @@ async function findQuizSetsByUserId(userId) {
   const result = await pool.query(
     `
     SELECT
-      qs.id AS quiz_set_id,
-      qs.source_title,
+      qs.id,
+      qs.source_title AS "sourceTitle",
       qs.category,
-      qs.created_at,
-      qi.id AS quiz_item_id,
-      qi.question_number,
-      qi.question,
-      qi.option_1,
-      qi.option_2,
-      qi.option_3,
-      qi.option_4,
-      qi.answer_index,
-      qi.explanation
+      qs.created_at AS "createdAt",
+      json_agg(
+        json_build_object(
+          'id', qi.id,
+          'quizSetId', qi.quiz_set_id,
+          'questionNumber', qi.question_number,
+          'question', qi.question,
+          'options', json_build_array(
+            qi.option_1,
+            qi.option_2,
+            qi.option_3,
+            qi.option_4
+          ),
+          'answerIndex', qi.answer_index,
+          'explanation', qi.explanation
+        )
+        ORDER BY qi.question_number ASC
+      ) AS quizzes
     FROM quiz_sets qs
     JOIN quiz_items qi ON qi.quiz_set_id = qs.id
     WHERE qs.user_id = $1
-    ORDER BY qs.created_at DESC, qi.question_number ASC
+    GROUP BY qs.id
+    ORDER BY qs.created_at DESC
     `,
     [userId],
   );
