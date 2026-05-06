@@ -76,7 +76,7 @@ async function findQuizSetsByUserId(userId) {
       qi.answer_index,
       qi.explanation
     FROM quiz_sets qs
-    LEFT JOIN quiz_items qi ON qi.quiz_set_id = qs.id
+    JOIN quiz_items qi ON qi.quiz_set_id = qs.id
     WHERE qs.user_id = $1
     ORDER BY qs.created_at DESC, qi.question_number ASC
     `,

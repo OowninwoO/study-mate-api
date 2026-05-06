@@ -171,22 +171,20 @@ async function getQuizSetsByUserId(userId) {
       });
     }
 
-    if (row.quiz_item_id !== null) {
-      quizSetMap.get(row.quiz_set_id).quizzes.push({
-        id: row.quiz_item_id,
-        quizSetId: row.quiz_set_id,
-        questionNumber: row.question_number,
-        question: row.question,
-        options: [
-          row.option_1,
-          row.option_2,
-          row.option_3,
-          row.option_4,
-        ],
-        answerIndex: row.answer_index,
-        explanation: row.explanation,
-      });
-    }
+    quizSetMap.get(row.quiz_set_id).quizzes.push({
+      id: row.quiz_item_id,
+      quizSetId: row.quiz_set_id,
+      questionNumber: row.question_number,
+      question: row.question,
+      options: [
+        row.option_1,
+        row.option_2,
+        row.option_3,
+        row.option_4,
+      ],
+      answerIndex: row.answer_index,
+      explanation: row.explanation,
+    });
   });
 
   return Array.from(quizSetMap.values());
