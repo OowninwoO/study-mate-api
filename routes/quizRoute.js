@@ -20,6 +20,14 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+router.post(
+  '/pdf',
+  verifyFirebaseToken,
+  authenticateUser,
+  upload.single('file'),
+  quizController.createQuizSetFromPdf,
+);
+
 router.get(
   '/my',
   verifyFirebaseToken,
@@ -32,14 +40,6 @@ router.post(
   verifyFirebaseToken,
   authenticateUser,
   quizController.submitQuiz,
-);
-
-router.post(
-  '/pdf',
-  verifyFirebaseToken,
-  authenticateUser,
-  upload.single('file'),
-  quizController.createQuizSetFromPdf,
 );
 
 module.exports = router;
