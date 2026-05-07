@@ -49,4 +49,11 @@ router.get(
   quizController.getMyQuizAttempts,
 );
 
+router.get(
+  '/attempts/stats',
+  verifyFirebaseToken,
+  authenticateUser,
+  quizController.getMyQuizAttemptStats,
+);
+
 module.exports = router;

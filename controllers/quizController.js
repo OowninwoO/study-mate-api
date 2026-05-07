@@ -96,9 +96,29 @@ async function getMyQuizAttempts(req, res) {
   }
 }
 
+async function getMyQuizAttemptStats(req, res) {
+  try {
+    const stats = await quizService.getQuizAttemptStatsByUserId(req.userId);
+
+    res.status(200).json({
+      ok: true,
+      message: '퀴즈 통계 조회 성공',
+      data: stats,
+    });
+  } catch (e) {
+    console.log(e);
+
+    res.status(500).json({
+      ok: false,
+      message: '퀴즈 통계 조회 실패',
+    });
+  }
+}
+
 module.exports = {
   createQuizSetFromPdf,
   getMyQuizSets,
   submitQuiz,
   getMyQuizAttempts,
+  getMyQuizAttemptStats,
 };

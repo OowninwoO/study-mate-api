@@ -199,9 +199,96 @@ async function findQuizAttemptsByUserId(userId) {
   return result.rows;
 }
 
+async function findQuizAttemptStatsByUserId(userId) {
+  const result = await pool.query(
+    `
+    WITH attempt_stats AS (
+      SELECT
+        qa.id,
+        qs.category,
+        qa.solving_time,
+        COUNT(*)::int AS question_count,
+        COUNT(*) FILTER (
+          WHERE qaa.selected_answer IS NOT NULL
+            AND qaa.selected_answer = qi.answer_index
+        )::int AS correct_count,
+        COUNT(*) FILTER (
+          WHERE qaa.selected_answer IS NOT NULL
+            AND qaa.selected_answer <> qi.answer_index
+        )::int AS wrong_count,
+        COUNT(*) FILTER (
+          WHERE qaa.selected_answer IS NULL
+        )::int AS unanswered_count
+      FROM quiz_attempts qa
+      JOIN quiz_sets qs ON qs.id = qa.quiz_set_id
+      JOIN quiz_attempt_answers qaa ON qaa.attempt_id = qa.id
+      JOIN quiz_items qi ON qi.id = qaa.quiz_item_id
+      WHERE qa.user_id = $1
+      GROUP BY qa.id, qs.category
+    ),
+    total_stats AS (
+      SELECT
+        COUNT(*)::int AS attempt_count,
+        COALESCE(SUM(question_count), 0)::int AS question_count,
+        COALESCE(SUM(correct_count), 0)::int AS correct_count,
+        COALESCE(SUM(wrong_count), 0)::int AS wrong_count,
+        COALESCE(SUM(unanswered_count), 0)::int AS unanswered_count,
+        COALESCE(ROUND(AVG(solving_time)), 0)::int AS average_solving_time
+      FROM attempt_stats
+    ),
+    category_stats AS (
+      SELECT
+        category,
+        COUNT(*)::int AS attempt_count,
+        COALESCE(SUM(question_count), 0)::int AS question_count,
+        COALESCE(SUM(correct_count), 0)::int AS correct_count,
+        COALESCE(SUM(wrong_count), 0)::int AS wrong_count,
+        COALESCE(SUM(unanswered_count), 0)::int AS unanswered_count,
+        COALESCE(ROUND(AVG(solving_time)), 0)::int AS average_solving_time
+      FROM attempt_stats
+      GROUP BY category
+    )
+    SELECT
+      json_build_object(
+        'total', json_build_object(
+          'attemptCount', ts.attempt_count,
+          'questionCount', ts.question_count,
+          'correctCount', ts.correct_count,
+          'wrongCount', ts.wrong_count,
+          'unansweredCount', ts.unanswered_count,
+          'averageSolvingTime', ts.average_solving_time
+        ),
+        'categories', COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'category', cs.category,
+                'attemptCount', cs.attempt_count,
+                'questionCount', cs.question_count,
+                'correctCount', cs.correct_count,
+                'wrongCount', cs.wrong_count,
+                'unansweredCount', cs.unanswered_count,
+                'averageSolvingTime', cs.average_solving_time
+              )
+              ORDER BY cs.category ASC
+            )
+            FROM category_stats cs
+          ),
+          '[]'::json
+        )
+      ) AS stats
+    FROM total_stats ts
+    `,
+    [userId],
+  );
+
+  return result.rows[0].stats;
+}
+
 module.exports = {
   createQuizSetWithItems,
   findQuizSetsByUserId,
   createQuizAttemptWithAnswers,
   findQuizAttemptsByUserId,
+  findQuizAttemptStatsByUserId,
 };

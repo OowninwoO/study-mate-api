@@ -204,9 +204,14 @@ async function getQuizAttemptsByUserId(userId) {
   return quizRepository.findQuizAttemptsByUserId(userId);
 }
 
+async function getQuizAttemptStatsByUserId(userId) {
+  return quizRepository.findQuizAttemptStatsByUserId(userId);
+}
+
 module.exports = {
   createQuizSetFromPdf,
   getQuizSetsByUserId,
   submitQuiz,
   getQuizAttemptsByUserId,
+  getQuizAttemptStatsByUserId,
 };
