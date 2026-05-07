@@ -141,8 +141,67 @@ async function createQuizAttemptWithAnswers(
   };
 }
 
+async function findQuizAttemptsByUserId(userId) {
+  const result = await pool.query(
+    `
+    SELECT
+      qa.id,
+      qa.quiz_set_id AS "quizSetId",
+      qs.source_title AS "sourceTitle",
+      qs.category,
+      qa.solving_time AS "solvingTime",
+      qa.created_at AS "createdAt",
+      COUNT(*)::int AS "totalCount",
+      COUNT(*) FILTER (
+        WHERE qaa.selected_answer IS NOT NULL
+          AND qaa.selected_answer = qi.answer_index
+      )::int AS "correctCount",
+      COUNT(*) FILTER (
+        WHERE qaa.selected_answer IS NOT NULL
+          AND qaa.selected_answer <> qi.answer_index
+      )::int AS "wrongCount",
+      COUNT(*) FILTER (
+        WHERE qaa.selected_answer IS NULL
+      )::int AS "unansweredCount",
+      json_agg(
+        json_build_object(
+          'id', qaa.id,
+          'quizItemId', qi.id,
+          'questionNumber', qi.question_number,
+          'question', qi.question,
+          'options', json_build_array(
+            qi.option_1,
+            qi.option_2,
+            qi.option_3,
+            qi.option_4
+          ),
+          'answerIndex', qi.answer_index,
+          'selectedAnswer', qaa.selected_answer,
+          'explanation', qi.explanation,
+          'isCorrect', (
+            qaa.selected_answer IS NOT NULL
+            AND qaa.selected_answer = qi.answer_index
+          )
+        )
+        ORDER BY qi.question_number ASC
+      ) AS answers
+    FROM quiz_attempts qa
+    JOIN quiz_sets qs ON qs.id = qa.quiz_set_id
+    JOIN quiz_attempt_answers qaa ON qaa.attempt_id = qa.id
+    JOIN quiz_items qi ON qi.id = qaa.quiz_item_id
+    WHERE qa.user_id = $1
+    GROUP BY qa.id, qs.id
+    ORDER BY qa.created_at DESC
+    `,
+    [userId],
+  );
+
+  return result.rows;
+}
+
 module.exports = {
   createQuizSetWithItems,
   findQuizSetsByUserId,
   createQuizAttemptWithAnswers,
+  findQuizAttemptsByUserId,
 };

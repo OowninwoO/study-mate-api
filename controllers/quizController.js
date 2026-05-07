@@ -77,8 +77,28 @@ async function submitQuiz(req, res) {
   }
 }
 
+async function getMyQuizAttempts(req, res) {
+  try {
+    const quizAttempts = await quizService.getQuizAttemptsByUserId(req.userId);
+
+    res.status(200).json({
+      ok: true,
+      message: '퀴즈 제출 목록 조회 성공',
+      data: quizAttempts,
+    });
+  } catch (e) {
+    console.log(e);
+
+    res.status(500).json({
+      ok: false,
+      message: '퀴즈 제출 목록 조회 실패',
+    });
+  }
+}
+
 module.exports = {
   createQuizSetFromPdf,
   getMyQuizSets,
   submitQuiz,
+  getMyQuizAttempts,
 };

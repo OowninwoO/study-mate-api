@@ -42,4 +42,11 @@ router.post(
   quizController.submitQuiz,
 );
 
+router.get(
+  '/attempts/my',
+  verifyFirebaseToken,
+  authenticateUser,
+  quizController.getMyQuizAttempts,
+);
+
 module.exports = router;

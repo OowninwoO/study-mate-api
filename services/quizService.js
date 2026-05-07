@@ -200,8 +200,13 @@ async function submitQuiz(userId, quizSetId, solvingTime, answers) {
   }
 }
 
+async function getQuizAttemptsByUserId(userId) {
+  return quizRepository.findQuizAttemptsByUserId(userId);
+}
+
 module.exports = {
   createQuizSetFromPdf,
   getQuizSetsByUserId,
   submitQuiz,
+  getQuizAttemptsByUserId,
 };
