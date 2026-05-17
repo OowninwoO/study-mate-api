@@ -10,6 +10,8 @@ CREATE TABLE users (
   email VARCHAR(255),
   display_name VARCHAR(100),
   profile_image_url TEXT,
+  study_streak_days INTEGER NOT NULL DEFAULT 0,
+  last_studied_date DATE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
