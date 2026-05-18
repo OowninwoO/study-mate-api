@@ -2,6 +2,7 @@ const fs = require('fs');
 const OpenAI = require('openai');
 const pool = require('../db');
 const quizRepository = require('../repositories/quizRepository');
+const userRepository = require('../repositories/userRepository');
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -177,6 +178,8 @@ async function submitQuiz(userId, quizSetId, solvingTime, answers) {
         },
       );
 
+    const studyStreak = await userRepository.updateStudyStreak(dbClient, userId);
+
     await dbClient.query('COMMIT');
 
     return {
@@ -190,6 +193,10 @@ async function submitQuiz(userId, quizSetId, solvingTime, answers) {
         quizItemId: answer.quiz_item_id,
         selectedAnswer: answer.selected_answer,
       })),
+      studyStreak: {
+        days: studyStreak.study_streak_days,
+        changed: studyStreak.changed,
+      },
       createdAt: quizAttempt.created_at,
     };
   } catch (e) {
