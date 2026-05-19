@@ -66,11 +66,13 @@ async function updateStudyStreak(dbClient, userId) {
         last_studied_date = now()::date,
         updated_at = now()
       WHERE id = $1
-      RETURNING study_streak_days
+      RETURNING study_streak_days, last_studied_date, updated_at
     )
     SELECT
+      before_user.last_studied_date IS DISTINCT FROM now()::date AS changed,
       updated_user.study_streak_days,
-      before_user.last_studied_date IS DISTINCT FROM now()::date AS changed
+      updated_user.last_studied_date,
+      updated_user.updated_at
     FROM updated_user
     CROSS JOIN before_user
     `,

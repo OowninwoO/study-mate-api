@@ -194,8 +194,10 @@ async function submitQuiz(userId, quizSetId, solvingTime, answers) {
         selectedAnswer: answer.selected_answer,
       })),
       studyStreak: {
-        days: studyStreak.study_streak_days,
         changed: studyStreak.changed,
+        studyStreakDays: studyStreak.study_streak_days,
+        lastStudiedDate: studyStreak.last_studied_date,
+        updatedAt: studyStreak.updated_at,
       },
       createdAt: quizAttempt.created_at,
     };
